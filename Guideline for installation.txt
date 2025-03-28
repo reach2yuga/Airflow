@@ -1,0 +1,336 @@
+As of this video, Airflow is not officially supported on Windows, so we'll be installing Docker and running Airflow on top of it.
+
+ 
+
+Docker is a software containerization platform designed for developing, shipping, and running applications. It packages the entire application along with its dependencies and configurations within a standardized unit known as a container. These containerized applications are known for their consistency, repeatability, and portability across different operating systems.
+
+ 
+
+ 
+
+Please download and install 'Docker Desktop for Windows' using the link provided in the video description.
+
+ 
+
+Search and open command prompt, and run wsl --update.
+
+If you encounter any problems during the WSL command, please refer to the video link in the description.
+
+ 
+
+After the successful completion of the WSL command, launch the Docker application and follow the initial setup process, including accepting the license agreement and completing the account registration.
+
+ 
+
+As our next step, let's install Visual Studio Code, a widely used code editor in many organizations.
+
+You can find the direct download links in the description below.
+
+Now, let's create a dedicated folder for our Airflow development work.
+
+Inside this newly created folder, right-click on an empty space and open the terminal.
+
+Enter 'code space dot.' This command will launch Visual Studio Code and open the current folder for development.
+
+ 
+
+You can install the Docker extension for Visual Studio from here, or alternatively, please go to the 'Extensions' section.
+
+There, search for and install the official Docker extension from Microsoft.
+
+Additionally, in Airflow, workflows are created using Python, so we need the Python extension as well.
+
+ 
+
+Let's create a new file called 'Dockerfile' and copy-paste this content provided in the video description.
+
+At a high level, we're building a custom Docker image, based on the official Apache Airflow Docker image.
+
+Currently, I've just added Git, but in our upcoming lessons, we'll introduce more customizations.
+
+ 
+
+Please save the file.
+
+ 
+
+Right-click on the Dockerfile and choose 'Build Image.'
+
+Provide a name for the custom image.
+
+This process will download the official Apache Airflow Docker image, and build our own custom image.
+
+This may take a bit of time, so please wait for it to complete.
+
+Once it’s done, tap 'inside' and press 'Enter' to close the terminal."
+
+ 
+
+Now, let's create another file named 'docker-compose dot YAML'.
+
+And copy-paste this content provided in the video description.
+
+This action essentially adds the custom Airflow image we created in the previous step.
+
+It links the ‘current folder airflow directory’ on your local machine, to the ‘opt airflow directory’ inside the container.
+
+It's important to note that Docker doesn't persist data such as ‘dag run history’ and ‘dag run logs’ by default. meaning, if you restart the Docker container, this data will be lost.
+
+To prevent this, we're mounting a local persistent volume inside the Docker container.
+
+ 
+
+Additionally, this configuration maps port 8080 on your host machine to port 8080 inside the container. This allows you to access the Airflow UI through your web browser on the host machine.
+
+ 
+
+Finally, running this command initiates all the Airflow components, including the scheduler, worker, and web server.
+
+Please save the file.
+
+ 
+
+ 
+
+Dockerfile and docker-compose file are the two key configuration files for working with Docker.
+
+Dockerfile provides instructions for building a Docker image, while docker-compose specifies, volumes, networking and other configurations for one or more Docker containers.
+
+ 
+
+We're now ready to launch Airflow!
+
+ 
+
+Right-click on the 'docker-compose' file and choose 'Compose Up.'
+
+Once you see this message, tap 'inside' and press 'Enter' to close the terminal.
+
+Please return to your Docker app.
+
+Navigate to 'Containers.'
+
+Over here, you should find a running container.
+
+Open the same, and choose 'View Details.
+
+ 
+
+You can check container specific logs right here.
+
+And access the container terminal from this tab.
+
+ 
+
+Click on this link to open the Airflow web user interface.
+
+Once the login page appears, the default username is 'admin,' and for the very first time when you bring up airflow, the password is typically found in the container log. Alternatively, you can locate the password details in your local Airflow folder.
+
+ 
+
+We're currently using SQLite as the metadata database, which is suitable for development, but not recommended for production.
+
+With that said, you can ignore these two warnings.
+
+In our upcoming videos, we’ll demonstrate how to set up Postgre SQL as the metadata database, which will eventually resolve these warnings.
+
+ 
+
+Now that we have access to the Airflow user interface, let's learn how to develop and schedule an Airflow dag.
+
+To begin, return to Visual Studio Code.
+
+Inside the 'Airflow' folder, please create a new directory named 'dags.'
+
+Now, let's create our very first Airflow dag.
+
+I’ll name it as 'welcome dag dot py.'
+
+Feel free to simply copy and paste the dag code provided in the video description.
+
+This is a sample dag with three basic tasks.
+
+The first task prints a welcome message,
+
+the second task displays the current date,
+
+and the third task prints a random quote from a website.
+
+I've established dependencies among these tasks.
+
+And also scheduled the dag to run daily at 11 PM.
+
+ 
+
+Let’s save the file.
+
+ 
+
+Please note that it may take around 5 minutes for the dag to become visible in the Airflow user interface.
+
+After a while, I’ve got the 'welcome dag' in the UI.
+
+As defined, its scheduled to run daily at 11 PM. However, for this demonstration, I’ll manually trigger the dag.
+
+All three tasks have executed successfully.
+
+Let's check the respective logs for more details.
+
+Great! All works as expected!
+
+ 
+
+When you're finished, simply right-click on the Docker Compose file and choose 'Compose Down'!
+
+ 
+
+That's all for today! Please stay tuned for our upcoming videos where we’ll dive deeper into the world of Airflow development.
+
+Please do like the video and subscribe to our channel.
+
+If you’ve any questions or thoughts, please feel free to leave them in the comments section below.
+
+
+
+
+ 
+
+dockerfile:
+
+FROM apache/airflow:latest
+
+
+
+USER root
+
+RUN apt-get update && \
+
+    apt-get -y install git && \
+
+    apt-get clean
+
+
+
+USER airflow
+
+
+
+docker-compose.yml:
+
+version: '3'
+
+
+
+services:
+
+  sleek-airflow:
+
+    image: sleek-airflow:latest
+
+    
+
+    volumes:
+
+      - ./airflow:/opt/airflow
+
+
+
+    ports:
+
+      - "8080:8080"
+
+
+
+    command: airflow standalone
+
+
+
+welcome_dag.py:
+
+from airflow import DAG
+
+from airflow.operators.python_operator import PythonOperator
+
+from airflow.utils.dates import days_ago
+
+from datetime import datetime
+
+import requests
+
+
+
+def print_welcome():
+
+    print('Welcome to Airflow!')
+
+
+
+def print_date():
+
+    print('Today is {}'.format(datetime.today().date()))
+
+
+
+def print_random_quote():
+
+    response = requests.get('<replace valid url here>')
+
+    quote = response.json()['content']
+
+    print('Quote of the day: "{}"'.format(quote))
+
+
+
+dag = DAG(
+
+    'welcome_dag',
+
+    default_args={'start_date': days_ago(1)},
+
+    schedule_interval='0 23 * * *',
+
+    catchup=False
+
+)
+
+
+
+print_welcome_task = PythonOperator(
+
+    task_id='print_welcome',
+
+    python_callable=print_welcome,
+
+    dag=dag
+
+)
+
+
+
+print_date_task = PythonOperator(
+
+    task_id='print_date',
+
+    python_callable=print_date,
+
+    dag=dag
+
+)
+
+
+
+print_random_quote = PythonOperator(
+
+    task_id='print_random_quote',
+
+    python_callable=print_random_quote,
+
+    dag=dag
+
+)
+
+
+
+# Set the dependencies between the tasks
+
+print_welcome_task >> print_date_task >> print_random_quote
